@@ -184,10 +184,15 @@ class MainActivity : Activity(), Controller.Listener {
      * LG TV: Apps / Keyboard / Touchpad in one column beside the channel rocker.
      * Android TV box (no channels): a 2x2 grid that adds Play/Pause.
      */
+    private var shortcutButtons: List<View>? = null
+
     private fun arrangeShortcuts() {
         val container = findViewById<LinearLayout>(R.id.shortcuts)
         findViewById<View>(R.id.chRocker).visibility = if (isLg) View.VISIBLE else View.GONE
-        val buttons = listOf(R.id.btnApps, R.id.btnKeyboard, R.id.btnPad, R.id.btnPlayPause).map { findViewById<View>(it) }
+        // Looked up once: a button left out of the current arrangement is detached from the
+        // window, so findViewById would no longer find it on the next call.
+        val buttons = shortcutButtons ?: listOf(R.id.btnApps, R.id.btnKeyboard, R.id.btnPad, R.id.btnPlayPause)
+            .map { findViewById<View>(it) }.also { shortcutButtons = it }
         buttons.forEach { (it.parent as? ViewGroup)?.removeView(it) }
         container.removeAllViews()
 

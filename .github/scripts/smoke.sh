@@ -36,13 +36,24 @@ front() {
   done
 }
 
-ui() { adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb shell cat /sdcard/ui.xml; }
+ui() {
+  adb shell rm -f /sdcard/ui.xml
+  for _ in 1 2 3; do
+    adb shell uiautomator dump /sdcard/ui.xml 2>&1 | grep -q "dumped to" && break
+    sleep 1
+  done
+  adb shell cat /sdcard/ui.xml 2>/dev/null
+}
 
 # Taps the view whose content-desc or text equals $1. $2 = optional vertical position 0-100 inside it.
 tap() {
   local b
   b=$(ui | grep -o "<node[^>]*\(content-desc\|text\)=\"$1\"[^>]*>" | head -1 | grep -o 'bounds="[^"]*"' | grep -o '[0-9]\+' | tr '\n' ' ')
-  if [ -z "$b" ]; then echo "::warning::no view '$1' on screen"; return 1; fi
+  if [ -z "$b" ]; then
+    echo "::warning::no view '$1' on screen. $(focus)"
+    ui | grep -o 'content-desc="[^"]\+"' | sort -u | tr '\n' ' ' | cut -c1-400; echo
+    return 1
+  fi
   set -- $b "${2:-50}"
   adb shell input tap $(( ($1 + $3) / 2 )) $(( $2 + ($4 - $2) * $5 / 100 ))
   sleep 2
