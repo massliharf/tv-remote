@@ -201,7 +201,7 @@ class MainActivity : Activity(), Controller.Listener {
 
     private fun render(controller: Controller?, state: Controller.State, message: String?) {
         val name = controller?.device?.name ?: "Cihaz"
-        val (text, color) = when (state) {
+        val (label, color) = when (state) {
             Controller.State.DISCONNECTED -> when {
                 controller == null -> "Cihaz ekle · dokun"
                 message != null -> "$name · bağlanamadı"
@@ -211,7 +211,7 @@ class MainActivity : Activity(), Controller.Listener {
             Controller.State.CONFIRM_ON_TV, Controller.State.ENTER_PIN -> "$name · eşleştiriliyor" to R.color.yellow
             Controller.State.CONNECTED -> name to R.color.green
         }
-        statusChip.text = text
+        statusChip.text = label
         statusChip.icon = getDrawable(controller?.device?.let { iconFor(it) } ?: R.drawable.ic_tv)
         statusChip.contentColor = getColor(color)
 

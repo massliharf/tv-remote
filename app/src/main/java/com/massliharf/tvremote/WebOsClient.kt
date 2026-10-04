@@ -137,7 +137,6 @@ class WebOsClient(private val context: Context, private val listener: Listener) 
                     payload?.optString("client-key")?.takeIf { it.isNotEmpty() }?.let {
                         Prefs.setClientKey(context, host, it)
                     }
-                    Prefs.setLastHost(context, host)
                     setState(State.CONNECTED)
                 }
                 "error" -> {
