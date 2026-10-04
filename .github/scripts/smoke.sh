@@ -31,7 +31,7 @@ front() {
   for _ in 1 2 3; do
     local f; f=$(focus)
     if echo "$f" | grep -q "$PKG/"; then return; fi
-    if echo "$f" | grep -q "$PKG"; then adb shell input keyevent KEYCODE_BACK; sleep 1; continue; fi
+    if echo "$f" | grep -q "$PKG"; then echo "front: BACK on $f"; adb shell input keyevent KEYCODE_BACK; sleep 1; continue; fi
     adb shell am start -W -n $PKG/.MainActivity >/dev/null; sleep 3
   done
 }
@@ -83,7 +83,10 @@ adb logcat -c; adb logcat -c -b crash
 echo "=== 1. First launch, nothing saved ==="
 adb shell am start -W -n $PKG/.MainActivity
 sleep 8; crashcheck "first launch"; shot 1_first_launch
+echo "--- focus after launch: $(focus)"
+adb logcat -d | grep -E "TvRemote|ActivityTaskManager.*tvremote|tvremote.*(finish|Force|Killing|died)" | tail -30
 front
+echo "--- focus after front: $(focus)"
 for d in "Güç" "Ana sayfa" "Uygulama" "Klavye" "Touchpad" "Gelişmiş"; do
   tap "$d"; crashcheck "tap $d (no device)"; front
 done
@@ -154,6 +157,8 @@ shot 4_relaunch
 
 echo "=== fake TV log ==="
 cat screens/fake_tvs.log | cut -c1-200 | head -150
+echo "=== app lifecycle ==="
+adb logcat -d | grep -E "TvRemote|ActivityTaskManager.*tvremote|ActivityManager.*tvremote" | tail -60
 echo "=== app errors in logcat ==="
 adb logcat -d | grep -E "AndroidRuntime|$PKG" | grep -E " E |FATAL" | head -40
 exit $FAILED

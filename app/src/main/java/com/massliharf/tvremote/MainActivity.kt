@@ -45,6 +45,7 @@ class MainActivity : Activity(), Controller.Listener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        android.util.Log.i(TAG, "onCreate restored=${savedInstanceState != null}")
         CrashLog.install(this)
         setContentView(R.layout.activity_main)
         val root = findViewById<View>(android.R.id.content)
@@ -125,7 +126,13 @@ class MainActivity : Activity(), Controller.Listener {
         else if (c.state == Controller.State.DISCONNECTED) c.connect()
     }
 
+    override fun onDestroy() {
+        android.util.Log.i(TAG, "onDestroy finishing=$isFinishing config=$isChangingConfigurations")
+        super.onDestroy()
+    }
+
     override fun onStop() {
+        android.util.Log.i(TAG, "onStop finishing=$isFinishing")
         super.onStop()
         controller?.disconnect()
         hid?.stop()
@@ -710,6 +717,7 @@ class MainActivity : Activity(), Controller.Listener {
     }
 
     private companion object {
+        const val TAG = "TvRemote"
         const val REQ_BT_PERMISSIONS = 10
         const val REQ_BT_ENABLE = 11
         const val DEFAULT_PAD_HINT = "Kaydır · Dokun · 2 parmakla kaydır"
