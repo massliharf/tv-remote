@@ -45,6 +45,7 @@ class MainActivity : Activity(), Controller.Listener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        CrashLog.install(this)
         setContentView(R.layout.activity_main)
         val root = findViewById<View>(android.R.id.content)
         Fonts.apply(root)
@@ -84,15 +85,43 @@ class MainActivity : Activity(), Controller.Listener {
             }
         }
 
-        Prefs.activeDevice(this)?.let { selectDevice(it, connect = false) }
+        val crash = CrashLog.take(this)
+        // After a crash, don't restore the last device automatically in case it is the cause.
+        if (crash == null) Prefs.activeDevice(this)?.let { selectDevice(it, connect = false) }
         refreshUi()
+        crash?.let { showCrashReport(it) }
+    }
+
+    private var crashShown = false
+
+    /** After a crash, show what happened so the user can copy and send it. */
+    private fun showCrashReport(report: String) {
+        crashShown = true
+        val content = layoutInflater.inflate(R.layout.sheet_message, null)
+        content.findViewById<TextView>(R.id.msgText).apply {
+            text = "Uygulama son açılışta çöktü. Aşağıdaki hata kaydını kopyalayıp gönderirseniz düzeltebilirim.\n\n$report"
+            textSize = 12f
+            setTextIsSelectable(true)
+        }
+        val sheet = Sheet(this, "Bir hata oluştu", content)
+        (content as LinearLayout).addView(KeyButton(this).apply {
+            text = "Hata kaydını kopyala"
+            kind = KeyButton.Kind.BLUE
+            setOnClickListener {
+                val cm = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("crash", report))
+                toast("Kopyalandı", short = true)
+            }
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (58 * resources.displayMetrics.density).toInt()))
+        sheet.setOnDismissListener { crashShown = false }
+        sheet.show()
     }
 
     override fun onStart() {
         super.onStart()
         if (!isLg && touchpad.visibility == View.VISIBLE) startHid()
         val c = controller
-        if (c == null) showConnectSheet()
+        if (c == null) { if (!crashShown) showConnectSheet() }
         else if (c.state == Controller.State.DISCONNECTED) c.connect()
     }
 
