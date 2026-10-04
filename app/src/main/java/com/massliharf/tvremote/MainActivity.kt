@@ -1,6 +1,12 @@
 package com.massliharf.tvremote
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
+import android.bluetooth.BluetoothAdapter
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -31,6 +37,10 @@ class MainActivity : Activity(), Controller.Listener {
     private var connectSheet: Sheet? = null
     private var pinError: TextView? = null
 
+    private var hid: HidMouse? = null
+    private var hidSheet: Sheet? = null
+    private var hidStatus: TextView? = null
+
     private val isLg get() = controller?.device?.type != Device.Type.ANDROID_TV
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,7 +61,6 @@ class MainActivity : Activity(), Controller.Listener {
         wireKeys(root)
         dpad.onKey = { press(it) }
         findViewById<RockerView>(R.id.volRocker).onKey = { press(it) }
-        findViewById<RockerView>(R.id.chRocker).onKey = { press(it) }
 
         statusChip.setOnClickListener { showDevicesSheet() }
         findViewById<View>(R.id.btnMore).setOnClickListener { showAdvancedSheet() }
@@ -59,9 +68,19 @@ class MainActivity : Activity(), Controller.Listener {
         findViewById<View>(R.id.btnApps).setOnClickListener { showAppsSheet() }
         btnPad.setOnClickListener { setTouchpad(touchpad.visibility != View.VISIBLE) }
         touchpad.listener = object : TouchpadView.Listener {
-            override fun onMove(dx: Int, dy: Int) { controller?.move(dx, dy) }
-            override fun onTap() { controller?.click() }
-            override fun onScroll(dx: Int, dy: Int) { controller?.scroll(dx, dy) }
+            override fun onMove(dx: Int, dy: Int) {
+                if (isLg) controller?.move(dx, dy) else hid?.move(dx, dy)
+            }
+
+            override fun onTap() {
+                if (isLg) controller?.click()
+                else if (hid?.state == HidMouse.State.CONNECTED) hid?.click()
+                else showHidSetupSheet()
+            }
+
+            override fun onScroll(dx: Int, dy: Int) {
+                if (isLg) controller?.scroll(dx, dy) else hid?.scroll(dy)
+            }
         }
 
         Prefs.activeDevice(this)?.let { selectDevice(it, connect = false) }
@@ -70,6 +89,7 @@ class MainActivity : Activity(), Controller.Listener {
 
     override fun onStart() {
         super.onStart()
+        if (!isLg && touchpad.visibility == View.VISIBLE) startHid()
         val c = controller
         if (c == null) showConnectSheet()
         else if (c.state == Controller.State.DISCONNECTED) c.connect()
@@ -78,6 +98,7 @@ class MainActivity : Activity(), Controller.Listener {
     override fun onStop() {
         super.onStop()
         controller?.disconnect()
+        hid?.stop()
     }
 
     // ---- Devices ----
@@ -102,7 +123,7 @@ class MainActivity : Activity(), Controller.Listener {
 
     private fun refreshUi() {
         val c = controller
-        btnPad.isEnabled = c?.hasPointer ?: true
+        btnPad.isEnabled = isLg || Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
         updateModeHint()
         render(c, c?.state ?: Controller.State.DISCONNECTED, null)
         buildDeviceBar()
@@ -131,11 +152,131 @@ class MainActivity : Activity(), Controller.Listener {
     private fun iconFor(d: Device) = if (d.type == Device.Type.ANDROID_TV) R.drawable.ic_android else R.drawable.ic_tv
 
     private fun setTouchpad(on: Boolean) {
-        val show = on && controller?.hasPointer != false
+        val show = on && (isLg || Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
         touchpad.visibility = if (show) View.VISIBLE else View.GONE
         dpad.visibility = if (show) View.GONE else View.VISIBLE
         btnPad.text = if (show) "Yön tuşu" else "Touchpad"
         btnPad.icon = getDrawable(if (show) R.drawable.ic_dpad else R.drawable.ic_touch)
+        touchpad.hintText = DEFAULT_PAD_HINT
+        // Android TV gets its pointer over Bluetooth, see HidMouse.
+        if (show && !isLg) startHid() else hid?.stop()
+    }
+
+    // ---- Bluetooth touchpad for Android TV ----
+
+    private fun startHid() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val needed = arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_ADVERTISE)
+                .filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
+            if (needed.isNotEmpty()) {
+                requestPermissions(needed.toTypedArray(), REQ_BT_PERMISSIONS)
+                return
+            }
+        }
+        val mouse = hid ?: HidMouse(this) { state, message -> onHidState(state, message) }.also { hid = it }
+        if (!mouse.bluetoothOn) {
+            touchpad.hintText = "Bluetooth kapalı"
+            @Suppress("DEPRECATION")
+            startActivityForResult(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), REQ_BT_ENABLE)
+            return
+        }
+        mouse.start()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != REQ_BT_PERMISSIONS) return
+        if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+            startHid()
+        } else {
+            toast("Touchpad için Bluetooth izni gerekli")
+            setTouchpad(false)
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQ_BT_ENABLE) {
+            if (resultCode == RESULT_OK) startHid() else setTouchpad(false)
+        }
+    }
+
+    private fun onHidState(state: HidMouse.State, message: String?) {
+        touchpad.hintText = when (state) {
+            HidMouse.State.CONNECTED -> DEFAULT_PAD_HINT
+            HidMouse.State.CONNECTING -> "Bluetooth bağlanıyor…"
+            HidMouse.State.STARTING -> "Bluetooth hazırlanıyor…"
+            HidMouse.State.WAITING_FOR_HOST -> "Kutuya bağlı değil · kurulum için dokunun"
+            HidMouse.State.OFF -> message ?: "Bluetooth kapalı"
+        }
+        hidStatus?.text = when (state) {
+            HidMouse.State.CONNECTED -> "Bağlandı!"
+            HidMouse.State.CONNECTING -> "Bağlanıyor…"
+            HidMouse.State.WAITING_FOR_HOST -> message ?: "Kutunun telefonu bulmasını bekliyor…"
+            else -> message ?: ""
+        }
+        if (message != null && state == HidMouse.State.OFF) toast(message)
+        if (state == HidMouse.State.CONNECTED) {
+            hidSheet?.dismiss()
+            toast("Touchpad hazır", short = true)
+        }
+        if (state == HidMouse.State.WAITING_FOR_HOST && touchpad.visibility == View.VISIBLE) showHidSetupSheet()
+    }
+
+    @SuppressLint("MissingPermission") // granted in startHid() before the mouse exists
+    private fun showHidSetupSheet() {
+        val mouse = hid
+        if (hidSheet != null || isFinishing || mouse == null || mouse.state == HidMouse.State.OFF) {
+            if (mouse == null || mouse.state == HidMouse.State.OFF) startHid()
+            return
+        }
+        val d = resources.displayMetrics.density
+        val m = (5 * d).toInt()
+        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        fun text(t: String, color: Int = R.color.text, size: Float = 15f) = TextView(this).apply {
+            text = t
+            textSize = size
+            setTextColor(getColor(color))
+            setPadding(m, m, m, m)
+        }
+        content.addView(text(
+            "Kutuda imleç için telefon Bluetooth fare olarak eşleşir. Bir kez yapmanız yeterli:\n\n" +
+                "1. Kutuda: Ayarlar → Uzaktan Kumandalar ve Aksesuarlar → Aksesuar ekle\n" +
+                "2. Aşağıdan \"Telefonu görünür yap\"a basın\n" +
+                "3. Kutuda telefonunuzun adı çıkınca seçin ve eşleştirin"))
+        content.addView(KeyButton(this).apply {
+            icon = getDrawable(R.drawable.ic_visible)
+            text = "Telefonu görünür yap"
+            kind = KeyButton.Kind.BLUE
+            setOnClickListener {
+                try {
+                    startActivity(Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
+                        .putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120))
+                } catch (_: Exception) {
+                    toast("Görünür yapılamadı")
+                }
+            }
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (58 * d).toInt()).apply { setMargins(m, m, m, m) })
+        val status = text("Kutunun telefonu bulmasını bekliyor…", R.color.muted, 14f)
+        hidStatus = status
+        content.addView(status)
+
+        val bonded = try { mouse.bondedDevices } catch (_: Exception) { emptyList() }
+        if (bonded.isNotEmpty()) {
+            content.addView(text("Daha önce eşleştiyse buradan seçin:", R.color.muted, 13f))
+            for (dev in bonded) {
+                val name = try { dev.name } catch (_: SecurityException) { null } ?: dev.address
+                content.addView(rowButton(name, R.drawable.ic_bluetooth) {
+                    status.text = "$name cihazına bağlanılıyor…"
+                    mouse.connect(dev)
+                })
+            }
+        }
+        val sheet = Sheet(this, "Touchpad kurulumu", content)
+        hidSheet = sheet
+        sheet.setOnDismissListener { hidSheet = null; hidStatus = null }
+        sheet.show()
     }
 
     // ---- Key handling ----
@@ -501,6 +642,12 @@ class MainActivity : Activity(), Controller.Listener {
                 LinearLayout.LayoutParams.MATCH_PARENT, (60 * d).toInt(),
             ).apply { setMargins(m, m, m, m) }
         }
+    }
+
+    private companion object {
+        const val REQ_BT_PERMISSIONS = 10
+        const val REQ_BT_ENABLE = 11
+        const val DEFAULT_PAD_HINT = "Kaydır · Dokun · 2 parmakla kaydır"
     }
 
     private fun toast(msg: String, short: Boolean = false) =

@@ -25,6 +25,8 @@ class LgController(
 
     override val state get() = map(client.state)
 
+    private var playing = true
+
     /** Keys with dedicated SSAP endpoints; everything else goes through the pointer socket. */
     private val ssapKeys = mapOf(
         "VOLUMEUP" to "ssap://audio/volumeUp",
@@ -48,6 +50,12 @@ class LgController(
                 if (err != null || payload == null || !payload.has("mute")) client.sendButton("MUTE")
                 else client.request("ssap://audio/setMute", JSONObject().put("mute", !payload.optBoolean("mute")))
             }
+            return
+        }
+        if (key == "PLAYPAUSE") {
+            // webOS has no toggle, so alternate between play and pause.
+            playing = !playing
+            client.request(if (playing) "ssap://media.controls/play" else "ssap://media.controls/pause")
             return
         }
         val uri = ssapKeys[key]

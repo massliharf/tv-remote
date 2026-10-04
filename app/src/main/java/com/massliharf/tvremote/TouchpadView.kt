@@ -24,6 +24,9 @@ class TouchpadView @JvmOverloads constructor(
 
     var listener: Listener? = null
 
+    var hintText = "Kaydır · Dokun · 2 parmakla kaydır"
+        set(value) { field = value; invalidate() }
+
     private var lastX = 0f
     private var lastY = 0f
     private var downTime = 0L
@@ -73,7 +76,7 @@ class TouchpadView @JvmOverloads constructor(
             icon.setBounds((cx - s / 2).toInt(), (cy - s / 2).toInt(), (cx + s / 2).toInt(), (cy + s / 2).toInt())
             icon.draw(canvas)
             hint.color = c(R.color.muted)
-            canvas.drawText("Kaydır · Dokun · 2 parmakla kaydır", cx, cy + s / 2 + dp(22f), hint)
+            canvas.drawText(hintText, cx, cy + s / 2 + dp(22f), hint)
         }
     }
 

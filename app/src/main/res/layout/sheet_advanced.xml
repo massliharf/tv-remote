@@ -17,6 +17,13 @@
         app:kbIcon="@drawable/ic_ir"
         app:kbText="IR modu (kızılötesi)" />
 
+    <TextView style="@style/SectionTitle" android:text="Kanal" />
+
+    <LinearLayout style="@style/Row">
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="CHANNELDOWN" app:kbIcon="@drawable/ic_remove" app:kbText="Kanal" android:contentDescription="Kanal aşağı" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="CHANNELUP" app:kbIcon="@drawable/ic_add" app:kbText="Kanal" android:contentDescription="Kanal yukarı" />
+    </LinearLayout>
+
     <TextView style="@style/SectionTitle" android:text="Medya" />
 
     <LinearLayout style="@style/Row">

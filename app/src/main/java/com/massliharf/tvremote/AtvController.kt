@@ -76,7 +76,7 @@ class AtvController(
             "VOLUMEUP" to 24, "VOLUMEDOWN" to 25, "MUTE" to 164,
             "CHANNELUP" to 166, "CHANNELDOWN" to 167,
             "MENU" to 176, "QMENU" to 82, "INPUT" to 178, "INFO" to 165, "GUIDE" to 172,
-            "PLAY" to 126, "PAUSE" to 127, "STOP" to 86, "REWIND" to 89, "FASTFORWARD" to 90,
+            "PLAY" to 126, "PLAYPAUSE" to 85, "PAUSE" to 127, "STOP" to 86, "REWIND" to 89, "FASTFORWARD" to 90,
             "RED" to 183, "GREEN" to 184, "YELLOW" to 185, "BLUE" to 186,
             "0" to 7, "1" to 8, "2" to 9, "3" to 10, "4" to 11,
             "5" to 12, "6" to 13, "7" to 14, "8" to 15, "9" to 16,

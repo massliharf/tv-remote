@@ -162,7 +162,7 @@
                     app:kbIcon="@drawable/ic_mute" />
             </LinearLayout>
 
-            <!-- Volume rocker / shortcuts / channel rocker -->
+            <!-- Volume rocker + shortcuts -->
             <LinearLayout
                 style="@style/Row"
                 android:layout_marginTop="18dp">
@@ -179,53 +179,72 @@
                     android:layout_width="0dp"
                     android:layout_height="196dp"
                     android:layout_marginStart="14dp"
-                    android:layout_marginEnd="14dp"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
-                    <com.massliharf.tvremote.KeyButton
-                        android:id="@+id/btnApps"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"
-                        app:kbIcon="@drawable/ic_apps"
-                        app:kbKind="purple"
-                        app:kbText="Uygulama"
-                        app:kbTextSize="12sp"
-                        app:kbVertical="true" />
+                        android:orientation="horizontal">
 
-                    <com.massliharf.tvremote.KeyButton
-                        android:id="@+id/btnKeyboard"
+                        <com.massliharf.tvremote.KeyButton
+                            android:id="@+id/btnApps"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            app:kbIcon="@drawable/ic_apps"
+                            app:kbKind="purple"
+                            app:kbText="Uygulama"
+                            app:kbTextSize="12sp"
+                            app:kbVertical="true" />
+
+                        <com.massliharf.tvremote.KeyButton
+                            android:id="@+id/btnKeyboard"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            app:kbIcon="@drawable/ic_keyboard"
+                            app:kbKind="orange"
+                            app:kbText="Klavye"
+                            app:kbTextSize="12sp"
+                            app:kbVertical="true" />
+                    </LinearLayout>
+
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_marginTop="10dp"
                         android:layout_weight="1"
-                        app:kbIcon="@drawable/ic_keyboard"
-                        app:kbKind="orange"
-                        app:kbText="Klavye"
-                        app:kbTextSize="12sp"
-                        app:kbVertical="true" />
+                        android:orientation="horizontal">
 
-                    <com.massliharf.tvremote.KeyButton
-                        android:id="@+id/btnPad"
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_marginTop="10dp"
-                        android:layout_weight="1"
-                        app:kbIcon="@drawable/ic_touch"
-                        app:kbKind="yellow"
-                        app:kbText="Touchpad"
-                        app:kbTextSize="12sp"
-                        app:kbVertical="true" />
+                        <com.massliharf.tvremote.KeyButton
+                            android:id="@+id/btnPad"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            app:kbIcon="@drawable/ic_touch"
+                            app:kbKind="yellow"
+                            app:kbText="Touchpad"
+                            app:kbTextSize="12sp"
+                            app:kbVertical="true" />
+
+                        <com.massliharf.tvremote.KeyButton
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:contentDescription="Oynat / duraklat"
+                            android:tag="PLAYPAUSE"
+                            app:kbIcon="@drawable/ic_playpause"
+                            app:kbIconSize="32dp"
+                            app:kbKind="green"
+                            app:kbText="Oynat"
+                            app:kbTextSize="12sp"
+                            app:kbVertical="true" />
+                    </LinearLayout>
                 </LinearLayout>
-
-                <com.massliharf.tvremote.RockerView
-                    android:id="@+id/chRocker"
-                    android:layout_width="76dp"
-                    android:layout_height="196dp"
-                    app:rkBottomKey="CHANNELDOWN"
-                    app:rkLabel="KANAL"
-                    app:rkTopKey="CHANNELUP" />
             </LinearLayout>
         </LinearLayout>
 

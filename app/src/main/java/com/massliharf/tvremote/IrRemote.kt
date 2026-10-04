@@ -50,7 +50,7 @@ class IrRemote(context: Context) {
             "BACK" to 0x28, "EXIT" to 0x5B, "HOME" to 0x7C, "MENU" to 0x43, "QMENU" to 0x45,
             "INPUT" to 0x0B, "INFO" to 0xAA, "GUIDE" to 0xA9,
             "RED" to 0x72, "GREEN" to 0x71, "YELLOW" to 0x63, "BLUE" to 0x61,
-            "PLAY" to 0xB0, "PAUSE" to 0xBA, "STOP" to 0xB1, "REWIND" to 0x8F, "FASTFORWARD" to 0x8E,
+            "PLAY" to 0xB0, "PLAYPAUSE" to 0xBA, "PAUSE" to 0xBA, "STOP" to 0xB1, "REWIND" to 0x8F, "FASTFORWARD" to 0x8E,
             "0" to 0x10, "1" to 0x11, "2" to 0x12, "3" to 0x13, "4" to 0x14,
             "5" to 0x15, "6" to 0x16, "7" to 0x17, "8" to 0x18, "9" to 0x19,
         )
