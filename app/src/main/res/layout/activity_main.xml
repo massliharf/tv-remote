@@ -46,6 +46,22 @@
                 app:kbShape="circle" />
         </LinearLayout>
 
+        <!-- Quick switcher between saved devices (shown when there are two or more) -->
+        <HorizontalScrollView
+            android:id="@+id/deviceBarScroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:scrollbars="none"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/deviceBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
         <!-- Remote body -->
         <LinearLayout
             android:layout_width="match_parent"

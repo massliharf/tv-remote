@@ -12,7 +12,7 @@
         android:paddingStart="6dp"
         android:paddingEnd="6dp"
         android:paddingBottom="6dp"
-        android:text="Ağdaki LG TV'ler aranıyor…"
+        android:text="Ağdaki cihazlar aranıyor…"
         android:textColor="@color/muted"
         android:textSize="14sp" />
 
@@ -34,30 +34,35 @@
         style="@style/SectionTitle"
         android:text="Ya da IP adresini girin" />
 
-    <LinearLayout style="@style/Row" android:gravity="center_vertical">
-        <EditText
-            android:id="@+id/ipField"
-            android:layout_width="0dp"
-            android:layout_height="60dp"
-            android:layout_margin="5dp"
-            android:layout_weight="1"
-            android:background="@drawable/field_bg"
-            android:digits="0123456789."
-            android:hint="192.168.1.25"
-            android:inputType="number"
-            android:paddingStart="18dp"
-            android:paddingEnd="18dp"
-            android:textColor="@color/text"
-            android:textColorHint="@color/muted"
-            android:textSize="18sp" />
+    <EditText
+        android:id="@+id/ipField"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_margin="5dp"
+        android:background="@drawable/field_bg"
+        android:digits="0123456789."
+        android:hint="192.168.1.25"
+        android:inputType="number"
+        android:paddingStart="18dp"
+        android:paddingEnd="18dp"
+        android:textColor="@color/text"
+        android:textColorHint="@color/muted"
+        android:textSize="18sp" />
+
+    <LinearLayout style="@style/Row">
+        <com.massliharf.tvremote.KeyButton
+            android:id="@+id/btnIpLg"
+            style="@style/GridKey"
+            app:kbIcon="@drawable/ic_tv"
+            app:kbKind="red"
+            app:kbText="LG TV" />
 
         <com.massliharf.tvremote.KeyButton
-            android:id="@+id/btnConnectIp"
-            android:layout_width="wrap_content"
-            android:layout_height="60dp"
-            android:layout_margin="5dp"
+            android:id="@+id/btnIpAtv"
+            style="@style/GridKey"
+            app:kbIcon="@drawable/ic_android"
             app:kbKind="green"
-            app:kbText="Bağlan" />
+            app:kbText="Android TV" />
     </LinearLayout>
 
     <TextView
@@ -66,7 +71,7 @@
         android:paddingStart="6dp"
         android:paddingTop="4dp"
         android:paddingEnd="6dp"
-        android:text="TV'de: Ayarlar → Ağ → Ağ Durumu ekranında IP adresini görebilirsiniz."
+        android:text="LG: Ayarlar → Ağ → Ağ Durumu. Xiaomi: Ayarlar → Cihaz Tercihleri → Hakkında → Durum."
         android:textColor="@color/muted"
         android:textSize="13sp" />
 </LinearLayout>

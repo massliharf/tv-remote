@@ -7,39 +7,31 @@ import android.text.TextWatcher
 import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import org.json.JSONArray
-import org.json.JSONObject
 
-class MainActivity : Activity(), WebOsClient.Listener {
+class MainActivity : Activity(), Controller.Listener {
 
-    private lateinit var client: WebOsClient
+    private var controller: Controller? = null
     private lateinit var ir: IrRemote
     private lateinit var statusChip: KeyButton
     private lateinit var btnPad: KeyButton
     private lateinit var dpad: DpadView
     private lateinit var touchpad: TouchpadView
     private lateinit var modeHint: TextView
+    private lateinit var deviceBar: LinearLayout
+    private lateinit var deviceBarScroll: View
 
-    private var pairingSheet: Sheet? = null
+    private var confirmSheet: Sheet? = null
+    private var pinSheet: Sheet? = null
     private var connectSheet: Sheet? = null
+    private var pinError: TextView? = null
 
-    /** Keys handled by dedicated SSAP endpoints rather than the pointer socket. */
-    private val ssapKeys = mapOf(
-        "VOLUMEUP" to "ssap://audio/volumeUp",
-        "VOLUMEDOWN" to "ssap://audio/volumeDown",
-        "CHANNELUP" to "ssap://tv/channelUp",
-        "CHANNELDOWN" to "ssap://tv/channelDown",
-        "PLAY" to "ssap://media.controls/play",
-        "PAUSE" to "ssap://media.controls/pause",
-        "STOP" to "ssap://media.controls/stop",
-        "REWIND" to "ssap://media.controls/rewind",
-        "FASTFORWARD" to "ssap://media.controls/fastForward",
-    )
+    private val isLg get() = controller?.device?.type != Device.Type.ANDROID_TV
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,105 +39,140 @@ class MainActivity : Activity(), WebOsClient.Listener {
         val root = findViewById<View>(android.R.id.content)
         Fonts.apply(root)
 
-        client = WebOsClient(this, this)
         ir = IrRemote(this)
-
         statusChip = findViewById(R.id.statusChip)
         btnPad = findViewById(R.id.btnPad)
         dpad = findViewById(R.id.dpad)
         touchpad = findViewById(R.id.touchpad)
         modeHint = findViewById(R.id.modeHint)
+        deviceBar = findViewById(R.id.deviceBar)
+        deviceBarScroll = findViewById(R.id.deviceBarScroll)
 
         wireKeys(root)
         dpad.onKey = { press(it) }
         findViewById<RockerView>(R.id.volRocker).onKey = { press(it) }
         findViewById<RockerView>(R.id.chRocker).onKey = { press(it) }
 
-        statusChip.setOnClickListener { showConnectSheet() }
+        statusChip.setOnClickListener { showDevicesSheet() }
         findViewById<View>(R.id.btnMore).setOnClickListener { showAdvancedSheet() }
         findViewById<View>(R.id.btnKeyboard).setOnClickListener { showKeyboardSheet() }
         findViewById<View>(R.id.btnApps).setOnClickListener { showAppsSheet() }
         btnPad.setOnClickListener { setTouchpad(touchpad.visibility != View.VISIBLE) }
         touchpad.listener = object : TouchpadView.Listener {
-            override fun onMove(dx: Int, dy: Int) = client.move(dx, dy)
-            override fun onTap() = client.click()
-            override fun onScroll(dx: Int, dy: Int) = client.scroll(dx, dy)
+            override fun onMove(dx: Int, dy: Int) { controller?.move(dx, dy) }
+            override fun onTap() { controller?.click() }
+            override fun onScroll(dx: Int, dy: Int) { controller?.scroll(dx, dy) }
         }
 
-        updateModeHint()
-        onStateChanged(client.state)
+        Prefs.activeDevice(this)?.let { selectDevice(it, connect = false) }
+        refreshUi()
     }
 
     override fun onStart() {
         super.onStart()
-        val last = Prefs.lastHost(this)
-        if (last == null) {
-            showConnectSheet()
-        } else if (client.state == WebOsClient.State.DISCONNECTED) {
-            client.connect(last)
-        }
+        val c = controller
+        if (c == null) showConnectSheet()
+        else if (c.state == Controller.State.DISCONNECTED) c.connect()
     }
 
     override fun onStop() {
         super.onStop()
-        client.disconnect()
+        controller?.disconnect()
     }
 
+    // ---- Devices ----
+
+    /** Makes [device] the one the remote drives, disconnecting the previous one. */
+    private fun selectDevice(device: Device, connect: Boolean = true) {
+        if (controller?.device?.id == device.id) {
+            if (connect && controller?.state == Controller.State.DISCONNECTED) controller?.connect()
+            return
+        }
+        controller?.disconnect()
+        Prefs.addDevice(this, device)
+        Prefs.setActiveId(this, device.id)
+        controller = when (device.type) {
+            Device.Type.LG -> LgController(this, device, this)
+            Device.Type.ANDROID_TV -> AtvController(this, device, this)
+        }
+        setTouchpad(false)
+        refreshUi()
+        if (connect) controller?.connect()
+    }
+
+    private fun refreshUi() {
+        val c = controller
+        btnPad.isEnabled = c?.hasPointer ?: true
+        updateModeHint()
+        render(c, c?.state ?: Controller.State.DISCONNECTED, null)
+        buildDeviceBar()
+    }
+
+    private fun buildDeviceBar() {
+        val devices = Prefs.devices(this)
+        deviceBarScroll.visibility = if (devices.size >= 2) View.VISIBLE else View.GONE
+        deviceBar.removeAllViews()
+        val d = resources.displayMetrics.density
+        for (dev in devices) {
+            deviceBar.addView(KeyButton(this).apply {
+                icon = getDrawable(iconFor(dev))
+                text = dev.name
+                selectedLook = dev.id == controller?.device?.id
+                setOnClickListener {
+                    it.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                    selectDevice(dev)
+                }
+            }, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, (48 * d).toInt(),
+            ).apply { marginEnd = (10 * d).toInt() })
+        }
+    }
+
+    private fun iconFor(d: Device) = if (d.type == Device.Type.ANDROID_TV) R.drawable.ic_android else R.drawable.ic_tv
+
     private fun setTouchpad(on: Boolean) {
-        touchpad.visibility = if (on) View.VISIBLE else View.GONE
-        dpad.visibility = if (on) View.GONE else View.VISIBLE
-        btnPad.text = if (on) "Yön tuşu" else "Touchpad"
-        btnPad.icon = getDrawable(if (on) R.drawable.ic_dpad else R.drawable.ic_touch)
+        val show = on && controller?.hasPointer != false
+        touchpad.visibility = if (show) View.VISIBLE else View.GONE
+        dpad.visibility = if (show) View.GONE else View.VISIBLE
+        btnPad.text = if (show) "Yön tuşu" else "Touchpad"
+        btnPad.icon = getDrawable(if (show) R.drawable.ic_dpad else R.drawable.ic_touch)
     }
 
     // ---- Key handling ----
 
     /** Every KeyButton with a String tag sends that key when tapped. */
-    private fun wireKeys(view: View, after: (() -> Unit)? = null) {
+    private fun wireKeys(view: View) {
         if (view is ViewGroup) {
-            for (i in 0 until view.childCount) wireKeys(view.getChildAt(i), after)
+            for (i in 0 until view.childCount) wireKeys(view.getChildAt(i))
             return
         }
         val key = view.tag as? String ?: return
         view.setOnClickListener {
             it.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
             press(key)
-            after?.invoke()
         }
     }
 
     private fun press(key: String) {
-        if (Prefs.irMode(this)) {
+        val c = controller
+        // IR codes are LG codes, so IR mode only applies to the LG TV.
+        if (isLg && Prefs.irMode(this)) {
             sendIr(key)
             return
         }
-
-        val connected = client.state == WebOsClient.State.CONNECTED
-        if (key == "POWER") {
+        if (c == null || c.state != Controller.State.CONNECTED) {
             when {
-                connected -> client.request("ssap://system/turnOff")
-                ir.available -> sendIr(key)
-                else -> toast("Bu model (2014) Wi-Fi ile açılamıyor. TV'nin altındaki joystick tuşuyla açın.")
+                isLg && ir.available -> sendIr(key)
+                isLg && key == "POWER" ->
+                    toast("Bu model (2014) Wi-Fi ile açılamıyor. TV'nin altındaki joystick tuşuyla açın.")
+                else -> {
+                    toast("Önce cihaza bağlanın")
+                    if (c == null) showConnectSheet() else c.connect()
+                }
             }
             return
         }
-
-        if (!connected) {
-            if (ir.available) sendIr(key) else {
-                toast("Önce TV'ye bağlanın")
-                showConnectSheet()
-            }
-            return
-        }
-
-        when (key) {
-            "INPUT" -> showInputsSheet()
-            "MUTE" -> toggleMute()
-            else -> {
-                val uri = ssapKeys[key]
-                if (uri != null) client.request(uri) else client.sendButton(key)
-            }
-        }
+        if (key == "INPUT") showInputsSheet() else c.sendKey(key)
     }
 
     private fun sendIr(key: String) {
@@ -157,53 +184,152 @@ class MainActivity : Activity(), WebOsClient.Listener {
         }
     }
 
-    private fun toggleMute() {
-        client.request("ssap://audio/getStatus") { payload, err ->
-            if (err != null || payload == null || !payload.has("mute")) {
-                client.sendButton("MUTE")
-            } else {
-                val mute = !payload.optBoolean("mute")
-                client.request("ssap://audio/setMute", JSONObject().put("mute", mute))
-                toast(if (mute) "Ses kapatıldı" else "Ses açıldı", short = true)
-            }
-        }
-    }
-
     private fun updateModeHint() {
-        modeHint.text = if (Prefs.irMode(this)) "IR modu · kızılötesi" else "LG webOS · Wi-Fi"
+        modeHint.text = when {
+            controller?.device?.type == Device.Type.ANDROID_TV -> "Android TV · Wi-Fi"
+            Prefs.irMode(this) -> "IR modu · kızılötesi"
+            else -> "LG webOS · Wi-Fi"
+        }
     }
 
     // ---- Connection state ----
 
-    override fun onStateChanged(state: WebOsClient.State, message: String?) {
-        val host = client.host ?: ""
-        val (text, color) = when (state) {
-            WebOsClient.State.DISCONNECTED ->
-                (if (message != null) "Bağlanamadı · dokun" else "Bağlı değil · dokun") to R.color.muted
-            WebOsClient.State.CONNECTING -> "Bağlanıyor…" to R.color.yellow
-            WebOsClient.State.WAITING_FOR_PAIRING -> "Onay bekleniyor" to R.color.yellow
-            WebOsClient.State.CONNECTED -> "LG TV · $host" to R.color.green
-        }
-        statusChip.text = text
-        statusChip.contentColor = getColor(color)
-
-        if (state == WebOsClient.State.WAITING_FOR_PAIRING) showPairingSheet()
-        else { pairingSheet?.dismiss(); pairingSheet = null }
-
-        if (state == WebOsClient.State.CONNECTED) { connectSheet?.dismiss(); connectSheet = null }
+    override fun onStateChanged(controller: Controller, state: Controller.State, message: String?) {
+        if (controller !== this.controller) return // a device we switched away from
+        render(controller, state, message)
     }
 
-    private fun showPairingSheet() {
-        if (pairingSheet != null || isFinishing) return
+    private fun render(controller: Controller?, state: Controller.State, message: String?) {
+        val name = controller?.device?.name ?: "Cihaz"
+        val (text, color) = when (state) {
+            Controller.State.DISCONNECTED -> when {
+                controller == null -> "Cihaz ekle · dokun"
+                message != null -> "$name · bağlanamadı"
+                else -> "$name · bağlı değil"
+            } to R.color.muted
+            Controller.State.CONNECTING -> "$name · bağlanıyor…" to R.color.yellow
+            Controller.State.CONFIRM_ON_TV, Controller.State.ENTER_PIN -> "$name · eşleştiriliyor" to R.color.yellow
+            Controller.State.CONNECTED -> name to R.color.green
+        }
+        statusChip.text = text
+        statusChip.icon = getDrawable(controller?.device?.let { iconFor(it) } ?: R.drawable.ic_tv)
+        statusChip.contentColor = getColor(color)
+
+        if (state == Controller.State.CONFIRM_ON_TV) showConfirmSheet()
+        else { confirmSheet?.dismiss(); confirmSheet = null }
+
+        if (state == Controller.State.ENTER_PIN) showPinSheet()
+        else if (pinSheet != null) {
+            if (state == Controller.State.DISCONNECTED && message != null) {
+                pinError?.apply { text = message; visibility = View.VISIBLE }
+            } else {
+                pinSheet?.dismiss(); pinSheet = null
+            }
+        }
+
+        if (state == Controller.State.CONNECTED) { connectSheet?.dismiss(); connectSheet = null }
+        if (state == Controller.State.DISCONNECTED && message != null && pinSheet == null && controller != null) {
+            toast("${controller.device.name}: $message", short = true)
+        }
+    }
+
+    private fun showConfirmSheet() {
+        if (confirmSheet != null || isFinishing) return
         val content = layoutInflater.inflate(R.layout.sheet_message, null)
         content.findViewById<TextView>(R.id.msgText).text =
             "TV ekranında bir eşleştirme isteği çıktı.\n\n" +
             "Kumandanız olmadığı için TV'nin alt-orta kısmındaki joystick tuşunu kullanın: " +
             "\"Evet\"e gelip tuşa basın.\n\nBu yalnızca bir kez gerekir."
-        pairingSheet = Sheet(this, "TV'de onaylayın", content).apply {
-            setOnDismissListener { pairingSheet = null }
+        confirmSheet = Sheet(this, "TV'de onaylayın", content).apply {
+            setOnDismissListener { confirmSheet = null }
             show()
         }
+    }
+
+    private fun showPinSheet() {
+        pinError?.visibility = View.GONE
+        if (pinSheet != null || isFinishing) return
+        val content = layoutInflater.inflate(R.layout.sheet_pin, null)
+        val field = content.findViewById<EditText>(R.id.pinField)
+        val error = content.findViewById<TextView>(R.id.pinError)
+        pinError = error
+        val sheet = Sheet(this, "Eşleştirme kodu", content)
+        pinSheet = sheet
+        sheet.setOnDismissListener { pinSheet = null; pinError = null }
+
+        val submit = submit@{
+            val pin = field.text.toString().trim()
+            val c = controller ?: return@submit
+            if (c.state != Controller.State.ENTER_PIN) {
+                // The previous attempt ended; start over to get a fresh code.
+                error.text = "Yeni kod isteniyor…"
+                error.visibility = View.VISIBLE
+                field.setText("")
+                c.connect()
+                return@submit
+            }
+            if (pin.length != 6) {
+                error.text = "Kod 6 karakter olmalı"
+                error.visibility = View.VISIBLE
+            } else if (!c.submitPin(pin)) {
+                error.text = "Kod yanlış görünüyor, tekrar kontrol edin"
+                error.visibility = View.VISIBLE
+            } else {
+                error.visibility = View.GONE
+            }
+        }
+        field.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) { submit(); true } else false
+        }
+        content.findViewById<View>(R.id.btnPin).setOnClickListener { submit() }
+        sheet.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        sheet.show()
+        field.requestFocus()
+    }
+
+    // ---- Device / connect sheets ----
+
+    private fun showDevicesSheet() {
+        val devices = Prefs.devices(this)
+        if (devices.isEmpty()) {
+            showConnectSheet()
+            return
+        }
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val sheet = Sheet(this, "Cihazlar", list)
+        for (dev in devices) {
+            val active = dev.id == controller?.device?.id
+            val row = rowButton(dev.name, iconFor(dev), dev.host) {
+                sheet.dismiss()
+                selectDevice(dev)
+            }
+            (row as KeyButton).selectedLook = active
+            row.setOnLongClickListener {
+                Prefs.removeDevice(this, dev)
+                if (active) {
+                    controller?.disconnect()
+                    controller = null
+                    Prefs.activeDevice(this)?.let { selectDevice(it) }
+                }
+                refreshUi()
+                sheet.dismiss()
+                toast("${dev.name} silindi", short = true)
+                true
+            }
+            list.addView(row)
+        }
+        list.addView(rowButton("Yeni cihaz ekle", R.drawable.ic_add_circle) {
+            sheet.dismiss()
+            showConnectSheet()
+        })
+        list.addView(TextView(this).apply {
+            text = "Silmek için bir cihaza basılı tutun."
+            setTextColor(getColor(R.color.muted))
+            textSize = 13f
+            setPadding((6 * resources.displayMetrics.density).toInt(), (6 * resources.displayMetrics.density).toInt(), 0, 0)
+        })
+        Fonts.apply(list)
+        sheet.show()
     }
 
     private fun showConnectSheet() {
@@ -212,46 +338,51 @@ class MainActivity : Activity(), WebOsClient.Listener {
         val status = content.findViewById<TextView>(R.id.scanStatus)
         val list = content.findViewById<LinearLayout>(R.id.tvList)
         val ipField = content.findViewById<EditText>(R.id.ipField)
-        ipField.setText(Prefs.lastHost(this) ?: "")
 
-        val sheet = Sheet(this, "TV'ye bağlan", content)
+        val sheet = Sheet(this, "Cihaz ekle", content)
         connectSheet = sheet
         sheet.setOnDismissListener { connectSheet = null }
 
         fun scan() {
-            status.text = "Ağdaki LG TV'ler aranıyor…"
+            status.text = "Ağdaki cihazlar aranıyor…"
             list.removeAllViews()
-            Discovery.search(this) { tvs ->
+            Discovery.search(this) { found ->
                 if (!sheet.isShowing) return@search
-                status.text = if (tvs.isEmpty())
-                    "TV bulunamadı. TV açık ve aynı Wi-Fi ağında mı?" else "Bulunan TV'ler:"
-                for (tv in tvs) {
-                    list.addView(rowButton(tv.name, R.drawable.ic_tv, tv.host) {
-                        client.connect(tv.host)
-                        status.text = "${tv.host} adresine bağlanılıyor…"
+                status.text = if (found.isEmpty())
+                    "Cihaz bulunamadı. Açık ve aynı Wi-Fi ağında mı?" else "Bulunan cihazlar:"
+                for (dev in found) {
+                    val kind = if (dev.type == Device.Type.LG) "LG webOS" else "Android TV"
+                    list.addView(rowButton(dev.name, iconFor(dev), "$kind · ${dev.host}") {
+                        status.text = "${dev.name} cihazına bağlanılıyor…"
+                        selectDevice(dev)
                     })
                 }
             }
         }
 
-        content.findViewById<View>(R.id.btnRescan).setOnClickListener { scan() }
-        content.findViewById<View>(R.id.btnConnectIp).setOnClickListener {
+        fun connectIp(type: Device.Type) {
             val ip = ipField.text.toString().trim()
-            if (ip.isEmpty()) return@setOnClickListener
-            client.connect(ip)
+            if (ip.isEmpty()) return
+            val name = if (type == Device.Type.LG) "LG TV" else "Android TV"
             status.text = "$ip adresine bağlanılıyor…"
+            selectDevice(Device(type, ip, name))
         }
+
+        content.findViewById<View>(R.id.btnRescan).setOnClickListener { scan() }
+        content.findViewById<View>(R.id.btnIpLg).setOnClickListener { connectIp(Device.Type.LG) }
+        content.findViewById<View>(R.id.btnIpAtv).setOnClickListener { connectIp(Device.Type.ANDROID_TV) }
         sheet.show()
         scan()
     }
 
-    // ---- Sheets ----
+    // ---- Other sheets ----
 
-    private fun requireConnected(): Boolean {
-        if (client.state == WebOsClient.State.CONNECTED) return true
-        toast("Önce TV'ye bağlanın")
-        showConnectSheet()
-        return false
+    private fun requireConnected(): Controller? {
+        val c = controller
+        if (c != null && c.state == Controller.State.CONNECTED) return c
+        toast("Önce cihaza bağlanın")
+        if (c == null) showConnectSheet() else c.connect()
+        return null
     }
 
     private fun showAdvancedSheet() {
@@ -260,6 +391,7 @@ class MainActivity : Activity(), WebOsClient.Listener {
         wireKeys(content)
 
         val irButton = content.findViewById<KeyButton>(R.id.btnIrMode)
+        irButton.visibility = if (isLg) View.VISIBLE else View.GONE
         fun refreshIr() {
             val on = Prefs.irMode(this)
             irButton.selectedLook = on
@@ -277,39 +409,32 @@ class MainActivity : Activity(), WebOsClient.Listener {
         }
         content.findViewById<View>(R.id.btnChangeTv).setOnClickListener {
             sheet.dismiss()
-            showConnectSheet()
+            showDevicesSheet()
         }
         content.findViewById<View>(R.id.btnDisconnect).setOnClickListener {
             sheet.dismiss()
-            client.disconnect()
+            controller?.disconnect()
         }
         sheet.show()
     }
 
     private fun showKeyboardSheet() {
-        if (!requireConnected()) return
+        val c = requireConnected() ?: return
         val content = layoutInflater.inflate(R.layout.sheet_keyboard, null)
         val field = content.findViewById<EditText>(R.id.kbField)
         val sheet = Sheet(this, "Klavye", content)
 
-        // Mirror every edit to the TV's on-screen text box as it happens.
+        // Mirror every edit to the TV's text box as it happens.
         field.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun afterTextChanged(s: Editable?) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 if (s == null) return
-                if (before > 0) {
-                    client.request("ssap://com.webos.service.ime/deleteCharacters",
-                        JSONObject().put("count", before))
-                }
-                if (count > 0) {
-                    client.request("ssap://com.webos.service.ime/insertText",
-                        JSONObject().put("text", s.subSequence(start, start + count).toString()).put("replace", 0))
-                }
+                c.textChanged(s.toString(), before, s.subSequence(start, start + count).toString())
             }
         })
         val enter = {
-            client.request("ssap://com.webos.service.ime/sendEnterKey")
+            c.sendEnter()
             sheet.dismiss()
         }
         field.setOnEditorActionListener { _, actionId, _ ->
@@ -318,57 +443,38 @@ class MainActivity : Activity(), WebOsClient.Listener {
         content.findViewById<View>(R.id.kbEnter).setOnClickListener { enter() }
         content.findViewById<View>(R.id.kbDelete).setOnClickListener {
             if (field.text.isNotEmpty()) {
-                field.text.delete(field.text.length - 1, field.text.length) // watcher sends the delete
+                field.text.delete(field.text.length - 1, field.text.length) // the watcher sends it
             } else {
-                client.request("ssap://com.webos.service.ime/deleteCharacters", JSONObject().put("count", 1))
+                c.deleteChar()
             }
         }
-        sheet.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        sheet.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
         sheet.show()
         field.requestFocus()
     }
 
     private fun showAppsSheet() {
-        if (!requireConnected()) return
-        client.request("ssap://com.webos.applicationManager/listLaunchPoints") { payload, err ->
-            val list = payload?.optJSONArray("launchPoints")
-            if (err == null && list != null && list.length() > 0) {
-                showAppList(list)
-            } else {
-                client.request("ssap://com.webos.applicationManager/listApps") { p2, e2 ->
-                    val apps = p2?.optJSONArray("apps")
-                    if (e2 == null && apps != null) showAppList(apps)
-                    else toast("Uygulama listesi alınamadı: ${e2 ?: err}")
-                }
+        val c = requireConnected() ?: return
+        c.listApps { apps, err ->
+            if (apps == null) {
+                toast("Uygulama listesi alınamadı: $err")
+                return@listApps
             }
-        }
-    }
-
-    private fun showAppList(arr: JSONArray) {
-        val items = (0 until arr.length()).mapNotNull { i ->
-            val o = arr.optJSONObject(i) ?: return@mapNotNull null
-            val id = o.optString("id")
-            if (id.isEmpty() || o.optBoolean("hidden", false)) null
-            else o.optString("title", id) to id
-        }.sortedBy { it.first.lowercase() }
-        listSheet("Uygulamalar", items.map { it.first }, R.drawable.ic_apps) { which ->
-            client.request("ssap://system.launcher/launch", JSONObject().put("id", items[which].second))
+            listSheet("Uygulamalar", apps.map { it.first }, R.drawable.ic_apps) { which ->
+                c.launchApp(apps[which].second)
+            }
         }
     }
 
     private fun showInputsSheet() {
-        client.request("ssap://tv/getExternalInputList") { payload, err ->
-            val devices = payload?.optJSONArray("devices")
-            if (err != null || devices == null || devices.length() == 0) {
-                client.sendButton("INPUT") // fall back to the TV's own input picker
-                return@request
+        val c = controller ?: return
+        c.listInputs { inputs ->
+            if (inputs == null) {
+                c.sendKey("INPUT") // the device's own input picker
+                return@listInputs
             }
-            val items = (0 until devices.length()).mapNotNull { i ->
-                val d = devices.optJSONObject(i) ?: return@mapNotNull null
-                d.optString("label", d.optString("id")) to d.optString("id")
-            }
-            listSheet("Kaynak seçin", items.map { it.first }, R.drawable.ic_input) { which ->
-                client.request("ssap://tv/switchInput", JSONObject().put("inputId", items[which].second))
+            listSheet("Kaynak seçin", inputs.map { it.first }, R.drawable.ic_input) { which ->
+                c.switchInput(inputs[which].second)
             }
         }
     }
@@ -384,14 +490,15 @@ class MainActivity : Activity(), WebOsClient.Listener {
     }
 
     private fun rowButton(label: String, iconRes: Int, description: String? = null, onClick: () -> Unit): View {
-        val m = (5 * resources.displayMetrics.density).toInt()
+        val d = resources.displayMetrics.density
+        val m = (5 * d).toInt()
         return KeyButton(this).apply {
-            this.icon = getDrawable(iconRes)
+            icon = getDrawable(iconRes)
             text = if (description != null && description != label) "$label  ·  $description" else label
             setAlignStart()
             setOnClickListener { onClick() }
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, (60 * resources.displayMetrics.density).toInt(),
+                LinearLayout.LayoutParams.MATCH_PARENT, (60 * d).toInt(),
             ).apply { setMargins(m, m, m, m) }
         }
     }

@@ -1,6 +1,8 @@
 # LG TV Kumanda (Android)
 
-LG **42LB652V** (2014, webOS 1.0) ve diğer LG webOS TV'ler için Android kumanda uygulaması.
+LG **42LB652V** (2014, webOS 1.0) ve diğer LG webOS TV'ler ile **Xiaomi Mi Box / Mi TV Stick**
+gibi Android TV / Google TV cihazları için Android kumanda uygulaması. Birden fazla cihaz
+kaydedilebilir; üstteki çubuktan tek dokunuşla aralarında geçilir.
 
 ## Kurulum
 
@@ -16,6 +18,12 @@ LG **42LB652V** (2014, webOS 1.0) ve diğer LG webOS TV'ler için Android kumand
 4. TV ekranında eşleştirme isteği çıkar. Kumanda olmadığı için **TV'nin alt-orta kısmındaki
    joystick tuşu** ile *Evet*'i seçip basın. Bu yalnızca bir kez gerekir.
 
+## Xiaomi TV Box (Android TV) ekleme
+
+1. Uygulamada üstteki cihaz etiketine dokunun → **Yeni cihaz ekle**. Kutu listede "Android TV" olarak çıkar
+   (çıkmazsa IP adresini yazıp **Android TV**'ye basın).
+2. Kutunun ekranında 6 haneli bir kod çıkar; kodu uygulamaya yazıp **Eşleştir**'e basın. Bu yalnızca bir kez gerekir.
+
 ## Özellikler
 
 - Güç (kapatma), ses, sessiz, kanal, yön tuşları + OK, Geri, Ana Sayfa, Çıkış, Ayarlar, Q.Menü
@@ -28,6 +36,7 @@ LG **42LB652V** (2014, webOS 1.0) ve diğer LG webOS TV'ler için Android kumand
 
 ## Teknik
 
-- Ağ kontrolü: webOS SSAP protokolü, `ws://<tv-ip>:3000`
+- LG: webOS SSAP protokolü, `ws://<tv-ip>:3000`
+- Android TV: Android TV Remote v2 protokolü (Google TV uygulamasıyla aynı), TLS, port 6466/6467
 - Eşleştirme manifesti [lgtv2](https://github.com/hobbyquaker/lgtv2) projesinden alınmıştır (MIT).
 - Yerelde derleme: `./gradlew assembleRelease` (Android SDK gerekir).

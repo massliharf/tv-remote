@@ -76,7 +76,7 @@
         android:layout_margin="5dp"
         app:kbAlignStart="true"
         app:kbIcon="@drawable/ic_wifi"
-        app:kbText="TV seç / değiştir" />
+        app:kbText="Cihazlar" />
 
     <com.massliharf.tvremote.KeyButton
         android:id="@+id/btnDisconnect"
