@@ -25,7 +25,15 @@ class KeyButton @JvmOverloads constructor(
     var icon: Drawable? = null
         set(value) { field = value?.mutate(); invalidate() }
     var text: String? = null
-        set(value) { field = value; if (value != null) contentDescription = value; requestLayout(); invalidate() }
+        set(value) {
+            // A contentDescription given explicitly (e.g. in XML) is more descriptive; keep it.
+            if (value != null && (contentDescription == null || contentDescription == field)) {
+                contentDescription = value
+            }
+            field = value
+            requestLayout()
+            invalidate()
+        }
     var kind = Kind.NEUTRAL
         set(value) { field = value; invalidate() }
 
