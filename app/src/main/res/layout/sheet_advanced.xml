@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Contents of the "Gelişmiş" (advanced) bottom sheet. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView style="@style/SectionTitle" android:layout_marginTop="4dp" android:text="Mod" />
+
+    <com.massliharf.tvremote.KeyButton
+        android:id="@+id/btnIrMode"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_margin="5dp"
+        app:kbAlignStart="true"
+        app:kbIcon="@drawable/ic_ir"
+        app:kbText="IR modu (kızılötesi)" />
+
+    <TextView style="@style/SectionTitle" android:text="Medya" />
+
+    <LinearLayout style="@style/Row">
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="REWIND" app:kbIcon="@drawable/ic_rewind" android:contentDescription="Geri sar" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="PLAY" app:kbIcon="@drawable/ic_play" app:kbKind="green" android:contentDescription="Oynat" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="PAUSE" app:kbIcon="@drawable/ic_pause" android:contentDescription="Duraklat" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="STOP" app:kbIcon="@drawable/ic_stop" android:contentDescription="Durdur" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="FASTFORWARD" app:kbIcon="@drawable/ic_ff" android:contentDescription="İleri sar" />
+    </LinearLayout>
+
+    <TextView style="@style/SectionTitle" android:text="Rakamlar" />
+
+    <LinearLayout style="@style/Row">
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="1" app:kbText="1" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="2" app:kbText="2" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="3" app:kbText="3" />
+    </LinearLayout>
+    <LinearLayout style="@style/Row">
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="4" app:kbText="4" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="5" app:kbText="5" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="6" app:kbText="6" />
+    </LinearLayout>
+    <LinearLayout style="@style/Row">
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="7" app:kbText="7" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="8" app:kbText="8" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="9" app:kbText="9" />
+    </LinearLayout>
+    <LinearLayout style="@style/Row">
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="GUIDE" app:kbIcon="@drawable/ic_guide" android:contentDescription="Rehber" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="0" app:kbText="0" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="ENTER" app:kbIcon="@drawable/ic_check" android:contentDescription="OK" />
+    </LinearLayout>
+
+    <TextView style="@style/SectionTitle" android:text="Renkli tuşlar" />
+
+    <LinearLayout style="@style/Row">
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="RED" app:kbKind="red" android:contentDescription="Kırmızı" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="GREEN" app:kbKind="green" android:contentDescription="Yeşil" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="YELLOW" app:kbKind="yellow" android:contentDescription="Sarı" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="BLUE" app:kbKind="blue" android:contentDescription="Mavi" />
+    </LinearLayout>
+
+    <TextView style="@style/SectionTitle" android:text="Diğer" />
+
+    <LinearLayout style="@style/Row">
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="QMENU" app:kbIcon="@drawable/ic_qmenu" android:contentDescription="Hızlı menü" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="INFO" app:kbIcon="@drawable/ic_info" android:contentDescription="Bilgi" />
+            <com.massliharf.tvremote.KeyButton style="@style/GridKey" android:tag="EXIT" app:kbIcon="@drawable/ic_exit" android:contentDescription="Çıkış" />
+    </LinearLayout>
+
+    <TextView style="@style/SectionTitle" android:text="Bağlantı" />
+
+    <com.massliharf.tvremote.KeyButton
+        android:id="@+id/btnChangeTv"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_margin="5dp"
+        app:kbAlignStart="true"
+        app:kbIcon="@drawable/ic_wifi"
+        app:kbText="TV seç / değiştir" />
+
+    <com.massliharf.tvremote.KeyButton
+        android:id="@+id/btnDisconnect"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_margin="5dp"
+        app:kbAlignStart="true"
+        app:kbIcon="@drawable/ic_link_off"
+        app:kbText="Bağlantıyı kes" />
+</LinearLayout>

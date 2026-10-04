@@ -1,10 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#FF121417</color>
-    <color name="key">#FF262A30</color>
-    <color name="key_pressed">#FF3A404A</color>
-    <color name="text">#FFECEFF4</color>
-    <color name="muted">#FF9AA3AF</color>
-    <color name="accent">#FFA50034</color>
-    <color name="ok">#FF3B82F6</color>
+    <!-- Surfaces -->
+    <color name="bg">#FFFFFFFF</color>
+    <color name="body_face">#FFFFFFFF</color>
+    <color name="body_border">#FFE5E5E5</color>
+    <color name="text">#FF4B4B4B</color>
+    <color name="muted">#FFAFAFAF</color>
+
+    <!-- Neutral key -->
+    <color name="key_face">#FFFFFFFF</color>
+    <color name="key_border">#FFE5E5E5</color>
+    <color name="key_pressed">#FFF2F2F2</color>
+    <color name="key_content">#FF4B4B4B</color>
+
+    <!-- Selected / toggled key -->
+    <color name="sel_face">#FFDDF4FF</color>
+    <color name="sel_border">#FF84D8FF</color>
+    <color name="sel_content">#FF1CB0F6</color>
+
+    <!-- Brand keys (face / lip) -->
+    <color name="green">#FF58CC02</color>
+    <color name="green_lip">#FF58A700</color>
+    <color name="blue">#FF1CB0F6</color>
+    <color name="blue_lip">#FF1899D6</color>
+    <color name="red">#FFFF4B4B</color>
+    <color name="red_lip">#FFEA2B2B</color>
+    <color name="yellow">#FFFFC800</color>
+    <color name="yellow_lip">#FFE5A400</color>
+    <color name="purple">#FFCE82FF</color>
+    <color name="purple_lip">#FFA568CC</color>
+    <color name="orange">#FFFF9600</color>
+    <color name="orange_lip">#FFE08600</color>
 </resources>

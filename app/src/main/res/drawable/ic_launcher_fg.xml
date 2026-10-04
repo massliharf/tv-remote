@@ -5,7 +5,7 @@
     <!-- remote body -->
     <path android:fillColor="#FFECEFF4"
         android:pathData="M44,28h20a6,6 0,0 1,6 6v40a6,6 0,0 1,-6 6h-20a6,6 0,0 1,-6 -6v-40a6,6 0,0 1,6 -6z" />
-    <path android:fillColor="#FFA50034"
+    <path android:fillColor="#FFFF4B4B"
         android:pathData="M54,34m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
     <path android:fillColor="#FF262A30"
         android:pathData="M54,52m-8,0a8,8 0,1 1,16 0a8,8 0,1 1,-16 0" />

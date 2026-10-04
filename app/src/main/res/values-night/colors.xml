@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#FF131F24</color>
+    <color name="body_face">#FF131F24</color>
+    <color name="body_border">#FF37464F</color>
+    <color name="text">#FFF1F7FB</color>
+    <color name="muted">#FF52656D</color>
+
+    <color name="key_face">#FF131F24</color>
+    <color name="key_border">#FF37464F</color>
+    <color name="key_pressed">#FF202F36</color>
+    <color name="key_content">#FFDCE6EC</color>
+
+    <color name="sel_face">#FF19313D</color>
+    <color name="sel_border">#FF3F85A7</color>
+    <color name="sel_content">#FF49C0F8</color>
+</resources>

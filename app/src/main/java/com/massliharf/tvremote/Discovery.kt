@@ -48,10 +48,7 @@ object Discovery {
                             !text.contains("LGE", ignoreCase = true)
                         ) continue
                         val host = pkt.address.hostAddress ?: continue
-                        val server = text.lineSequence()
-                            .firstOrNull { it.startsWith("SERVER:", ignoreCase = true) }
-                            ?.substringAfter(':')?.trim()
-                        found[host] = Tv(host, if (server.isNullOrEmpty()) "LG TV" else "LG TV ($server)")
+                        found[host] = Tv(host, "LG TV")
                     }
                 }
             } catch (_: Exception) {

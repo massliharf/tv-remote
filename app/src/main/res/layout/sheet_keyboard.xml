@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:text="Yazdıklarınız anında TV'deki metin kutusuna gider."
+        android:textColor="@color/muted"
+        android:textSize="14sp" />
+
+    <EditText
+        android:id="@+id/kbField"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_margin="5dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/field_bg"
+        android:hint="Bir şeyler yazın…"
+        android:imeOptions="actionSend"
+        android:inputType="text|textNoSuggestions"
+        android:paddingStart="18dp"
+        android:paddingEnd="18dp"
+        android:textColor="@color/text"
+        android:textColorHint="@color/muted"
+        android:textSize="18sp" />
+
+    <LinearLayout style="@style/Row" android:layout_marginTop="6dp">
+        <com.massliharf.tvremote.KeyButton
+            android:id="@+id/kbDelete"
+            style="@style/GridKey"
+            app:kbIcon="@drawable/ic_backspace"
+            app:kbText="Sil" />
+
+        <com.massliharf.tvremote.KeyButton
+            android:id="@+id/kbEnter"
+            style="@style/GridKey"
+            android:layout_weight="1.6"
+            app:kbIcon="@drawable/ic_enter"
+            app:kbKind="green"
+            app:kbText="Enter" />
+    </LinearLayout>
+</LinearLayout>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="KeyButton">
+        <attr name="kbIcon" format="reference" />
+        <attr name="kbText" format="string" />
+        <attr name="kbIconSize" format="dimension" />
+        <attr name="kbTextSize" format="dimension" />
+        <attr name="kbVertical" format="boolean" />
+        <attr name="kbAlignStart" format="boolean" />
+        <attr name="kbCaps" format="boolean" />
+        <attr name="kbKind" format="enum">
+            <enum name="neutral" value="0" />
+            <enum name="green" value="1" />
+            <enum name="blue" value="2" />
+            <enum name="red" value="3" />
+            <enum name="yellow" value="4" />
+            <enum name="purple" value="5" />
+            <enum name="orange" value="6" />
+        </attr>
+        <attr name="kbShape" format="enum">
+            <enum name="rounded" value="0" />
+            <enum name="circle" value="1" />
+            <enum name="pill" value="2" />
+        </attr>
+    </declare-styleable>
+
+    <declare-styleable name="RockerView">
+        <attr name="rkLabel" format="string" />
+        <attr name="rkTopKey" format="string" />
+        <attr name="rkBottomKey" format="string" />
+    </declare-styleable>
+</resources>

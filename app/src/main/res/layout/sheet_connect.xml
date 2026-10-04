@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/scanStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:paddingBottom="6dp"
+        android:text="Ağdaki LG TV'ler aranıyor…"
+        android:textColor="@color/muted"
+        android:textSize="14sp" />
+
+    <LinearLayout
+        android:id="@+id/tvList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <com.massliharf.tvremote.KeyButton
+        android:id="@+id/btnRescan"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_margin="5dp"
+        app:kbIcon="@drawable/ic_refresh"
+        app:kbText="Tekrar ara" />
+
+    <TextView
+        style="@style/SectionTitle"
+        android:text="Ya da IP adresini girin" />
+
+    <LinearLayout style="@style/Row" android:gravity="center_vertical">
+        <EditText
+            android:id="@+id/ipField"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_margin="5dp"
+            android:layout_weight="1"
+            android:background="@drawable/field_bg"
+            android:digits="0123456789."
+            android:hint="192.168.1.25"
+            android:inputType="number"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp"
+            android:textColor="@color/text"
+            android:textColorHint="@color/muted"
+            android:textSize="18sp" />
+
+        <com.massliharf.tvremote.KeyButton
+            android:id="@+id/btnConnectIp"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:layout_margin="5dp"
+            app:kbKind="green"
+            app:kbText="Bağlan" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="6dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="6dp"
+        android:text="TV'de: Ayarlar → Ağ → Ağ Durumu ekranında IP adresini görebilirsiniz."
+        android:textColor="@color/muted"
+        android:textSize="13sp" />
+</LinearLayout>
