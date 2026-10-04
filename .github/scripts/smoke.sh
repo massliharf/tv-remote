@@ -26,13 +26,17 @@ crashcheck() {
 
 focus() { adb shell dumpsys window | grep -m1 mCurrentFocus; }
 
-# Bring the remote back to the front with no sheet open.
+# Bring the remote back to the front with no sheet or keyboard open. Sheets share the
+# activity's window focus, so look for the main screen's "Gelişmiş" button instead.
 front() {
-  for _ in 1 2 3; do
-    local f; f=$(focus)
-    if echo "$f" | grep -q "$PKG/"; then return; fi
-    if echo "$f" | grep -q "$PKG"; then echo "front: BACK on $f"; adb shell input keyevent KEYCODE_BACK; sleep 1; continue; fi
-    adb shell am start -W -n $PKG/.MainActivity >/dev/null; sleep 3
+  for _ in 1 2 3 4; do
+    if ! focus | grep -q "$PKG/"; then
+      adb shell am start -W -n $PKG/.MainActivity >/dev/null; sleep 3; continue
+    fi
+    if ui | grep -q 'content-desc="Gelişmiş"' && ! adb shell dumpsys input_method | grep -q "mInputShown=true"; then
+      return
+    fi
+    adb shell input keyevent KEYCODE_BACK; sleep 1
   done
 }
 
