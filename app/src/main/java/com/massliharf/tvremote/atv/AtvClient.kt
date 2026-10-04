@@ -26,6 +26,7 @@ class AtvClient(
     private val store: Store,
     private val clientName: String,
     private val listener: Listener,
+    private val log: (String) -> Unit = {},
 ) {
     interface Store {
         fun get(key: String): String?
@@ -54,6 +55,7 @@ class AtvClient(
     @Volatile private var activeFeatures = FEATURES
 
     fun connect(host: String) {
+        log("connect $host (state=$state)")
         disconnect()
         this.host = host
         val gen = generation.incrementAndGet()
@@ -100,6 +102,7 @@ class AtvClient(
             }
         } catch (e: Exception) {
             error = e.message ?: e.javaClass.simpleName
+            log("remote session ended: $e")
         }
         if (gen != generation.get()) return
         closeQuietly(remoteSocket)
@@ -258,6 +261,7 @@ class AtvClient(
     }
 
     private fun setState(gen: Int, s: State, message: String?) {
+        log("state $s msg=$message gen=$gen current=${generation.get()} thread=${Thread.currentThread().name}")
         if (gen != generation.get()) return
         state = s
         listener.onState(s, message)

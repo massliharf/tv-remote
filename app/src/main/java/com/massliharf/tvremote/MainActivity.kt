@@ -409,6 +409,7 @@ class MainActivity : Activity(), Controller.Listener {
     }
 
     private fun render(controller: Controller?, state: Controller.State, message: String?) {
+        android.util.Log.i(TAG, "render ${controller?.device?.id} $state msg=$message")
         val name = controller?.device?.name ?: "Cihaz"
         val (label, color) = when (state) {
             Controller.State.DISCONNECTED -> when {

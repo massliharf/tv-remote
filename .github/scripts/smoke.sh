@@ -162,7 +162,7 @@ shot 4_relaunch
 echo "=== fake TV log ==="
 cat screens/fake_tvs.log | cut -c1-200 | head -150
 echo "=== app lifecycle ==="
-adb logcat -d | grep -E "TvRemote|ActivityTaskManager.*tvremote|ActivityManager.*tvremote" | tail -60
+adb logcat -d | grep -E "TvRemote|ActivityTaskManager.*tvremote|ActivityManager.*tvremote" | tail -150
 echo "=== app errors in logcat ==="
 adb logcat -d | grep -E "AndroidRuntime|$PKG" | grep -E " E |FATAL" | head -40
 exit $FAILED

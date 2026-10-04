@@ -134,15 +134,16 @@ def remote(c):
     log("ATV REMOTE <-", str(c.recv(R)).replace("\n", " "))
     m = R(); m.remote_set_active.SetInParent(); c.send(m)
     m = R(); m.remote_ime_batch_edit.ime_counter = 1; m.remote_ime_batch_edit.field_counter = 1; c.send(m)
-    c.c.settimeout(5)
+    import select
+    raw = c.c.fileno()
+    last_ping = time.time()
     while True:
-        try:
+        if c.buf or c.c.pending() or select.select([raw], [], [], 1.0)[0]:
             r = c.recv(R)
-            log("ATV REMOTE <-", str(r).replace("\n", " "))
-        except socket.timeout:
-            m = R(); m.remote_ping_request.val1 = 1; c.send(m)
-        except SSL.WantReadError:
-            m = R(); m.remote_ping_request.val1 = 1; c.send(m)
+            if not r.HasField("remote_ping_response"):
+                log("ATV REMOTE <-", str(r).replace("\n", " "))
+        if time.time() - last_ping > 5:
+            m = R(); m.remote_ping_request.val1 = 1; c.send(m); last_ping = time.time()
 
 threading.Thread(target=tls_server, args=(6467, pairing), daemon=True).start()
 threading.Thread(target=tls_server, args=(6466, remote), daemon=True).start()

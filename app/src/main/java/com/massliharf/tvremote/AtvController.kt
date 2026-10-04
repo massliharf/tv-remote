@@ -29,6 +29,7 @@ class AtvController(
                 main.post { listener.onStateChanged(this@AtvController, map(state), message) }
             }
         },
+        log = { android.util.Log.i("TvRemote", "atv: $it") },
     )
 
     private fun map(s: AtvClient.State) = when (s) {
