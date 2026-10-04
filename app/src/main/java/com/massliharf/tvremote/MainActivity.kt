@@ -61,6 +61,7 @@ class MainActivity : Activity(), Controller.Listener {
         wireKeys(root)
         dpad.onKey = { press(it) }
         findViewById<RockerView>(R.id.volRocker).onKey = { press(it) }
+        findViewById<RockerView>(R.id.chRocker).onKey = { press(it) }
 
         statusChip.setOnClickListener { showDevicesSheet() }
         findViewById<View>(R.id.btnMore).setOnClickListener { showAdvancedSheet() }
@@ -124,6 +125,7 @@ class MainActivity : Activity(), Controller.Listener {
     private fun refreshUi() {
         val c = controller
         btnPad.isEnabled = isLg || Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+        arrangeShortcuts()
         updateModeHint()
         render(c, c?.state ?: Controller.State.DISCONNECTED, null)
         buildDeviceBar()
@@ -146,6 +148,31 @@ class MainActivity : Activity(), Controller.Listener {
             }, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, (48 * d).toInt(),
             ).apply { marginEnd = (10 * d).toInt() })
+        }
+    }
+
+    /**
+     * LG TV: Apps / Keyboard / Touchpad in one column beside the channel rocker.
+     * Android TV box (no channels): a 2x2 grid that adds Play/Pause.
+     */
+    private fun arrangeShortcuts() {
+        val container = findViewById<LinearLayout>(R.id.shortcuts)
+        findViewById<View>(R.id.chRocker).visibility = if (isLg) View.VISIBLE else View.GONE
+        val buttons = listOf(R.id.btnApps, R.id.btnKeyboard, R.id.btnPad, R.id.btnPlayPause).map { findViewById<View>(it) }
+        buttons.forEach { (it.parent as? ViewGroup)?.removeView(it) }
+        container.removeAllViews()
+
+        val gap = (10 * resources.displayMetrics.density).toInt()
+        val rows = if (isLg) buttons.take(3).map { listOf(it) } else buttons.chunked(2)
+        buttons[3].visibility = if (isLg) View.GONE else View.VISIBLE
+        rows.forEachIndexed { r, row ->
+            val line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            row.forEachIndexed { i, b ->
+                line.addView(b, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+                    .apply { if (i > 0) marginStart = gap })
+            }
+            container.addView(line, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+                .apply { if (r > 0) topMargin = gap })
         }
     }
 
@@ -531,6 +558,10 @@ class MainActivity : Activity(), Controller.Listener {
         val sheet = Sheet(this, "Gelişmiş", content)
         wireKeys(content)
 
+        if (!isLg) { // an Android TV box has no channels
+            content.findViewById<View>(R.id.channelTitle).visibility = View.GONE
+            content.findViewById<View>(R.id.channelRow).visibility = View.GONE
+        }
         val irButton = content.findViewById<KeyButton>(R.id.btnIrMode)
         irButton.visibility = if (isLg) View.VISIBLE else View.GONE
         fun refreshIr() {
