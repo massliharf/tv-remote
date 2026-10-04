@@ -126,6 +126,13 @@ class MainActivity : Activity(), Controller.Listener {
         else if (c.state == Controller.State.DISCONNECTED) c.connect()
     }
 
+    // Keyboard, size and orientation changes are handled here instead of recreating the
+    // activity, which would drop the TV connection (and an Android TV pairing in progress).
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        android.util.Log.i(TAG, "configuration changed")
+    }
+
     override fun onDestroy() {
         android.util.Log.i(TAG, "onDestroy finishing=$isFinishing config=$isChangingConfigurations")
         super.onDestroy()
